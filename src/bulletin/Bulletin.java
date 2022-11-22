@@ -7,47 +7,42 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.LinkedList;
 
-public class Bulletin {
+public class Bulletin extends Thread {
+    private static final FileController fileController = new FileController(Constant.FILE_PATH);
+    private static final LinkedList<Record> recordList = Record.parseFromString(fileController.read());
+
     boolean runFlag = true;
-    private LinkedList<Record> recordList = new LinkedList<>();
-    private final FileController fileController = new FileController(Constant.FILE_PATH);
     private final char ESCAPE_CHAR = 'q';
     private final IoController ioController;
+    private final Socket socket;
 
     public Bulletin(Socket socket) {
+        this.socket = socket;
         ioController = new IoController(socket);
     }
 
+    @Override
     public void run() {
         try {
             showIntro();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        loadRecord();
-        Command command;
-        while (runFlag) {
-            try {
-                command = inputCommand();
-                executeCommand(command);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            Command command;
+            while (runFlag) {
+                try {
+                    command = inputCommand();
+                    executeCommand(command);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
-        }
-        saveRecord();
-        try {
             showClose();
+            socket.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void saveRecord() {
+    private static void saveRecord() {
         fileController.write(Record.parseToString(recordList));
-    }
-
-    private void loadRecord() {
-        recordList = Record.parseFromString(fileController.read());
     }
 
     private void showClose() throws IOException {
@@ -58,23 +53,40 @@ public class Bulletin {
         switch (command) {
             case HELP -> showHelp();
             case LIST -> showList();
-            case CREATE -> createRecord();
+            case CREATE -> {
+                createRecord();
+                saveRecord();
+            }
             case DETAIL -> showDetail();
-            case DELETE -> deleteRecord();
-            case QUIT -> runFlag = false;
+            case DELETE -> {
+                deleteRecord();
+                saveRecord();
+            }
+            case QUIT -> {
+                saveRecord();
+                runFlag = false;
+            }
         }
     }
 
     private void createRecord() throws IOException {
-        recordList.add(new Record(
-                ioController.nextLine("Please input a title"),
-                ioController.readMultipleLine("Please input a contents.\n" + "Press '" + ESCAPE_CHAR + "' to complete input.\n", ESCAPE_CHAR),
-                ioController.nextLine("Please input author")
-        ));
+        String title = ioController.nextLine("Please input a title");
+        String content = ioController.readMultipleLine("Please input a contents.\n" + "Press '" + ESCAPE_CHAR + "' to complete input.\n", ESCAPE_CHAR);
+        String author = ioController.nextLine("Please input author");
+        createRecord(title, content, author);
+    }
+
+    private synchronized static void createRecord(String title, String content, String author) {
+        recordList.add(new Record(title, content, author));
     }
 
     private void deleteRecord() throws IOException {
-        recordList.remove(searchRecord());
+        Record record = searchRecord();
+        deleteRecord(record);
+    }
+
+    private synchronized static void deleteRecord(Record record) {
+        recordList.remove(record);
     }
 
     private void showDetail() throws IOException {

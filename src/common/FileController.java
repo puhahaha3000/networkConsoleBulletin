@@ -19,7 +19,7 @@ public class FileController {
         }
     }
 
-    public void write(String str) {
+    public synchronized void write(String str) {
         if (!file.exists()) create();
         try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
             fileOutputStream.write(str.getBytes());
