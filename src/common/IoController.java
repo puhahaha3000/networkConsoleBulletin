@@ -67,7 +67,7 @@ public class IoController {
         }
     }
 
-    public void newLine(String s) throws IOException {
+    public void newLine() throws IOException {
         sendMsg("\n");
     }
 }

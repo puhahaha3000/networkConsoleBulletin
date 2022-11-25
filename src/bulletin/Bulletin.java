@@ -10,6 +10,8 @@ import java.util.LinkedList;
 public class Bulletin extends Thread {
     private static final FileController fileController = new FileController(Constant.FILE_PATH);
     private static final LinkedList<Record> recordList = Record.parseFromString(fileController.read());
+    private static final String ESCAPE_STRING = "/q";
+    private static final String BACK_STRING = "/b";
 
     boolean runFlag = true;
     private final IoController ioController;
@@ -46,7 +48,8 @@ public class Bulletin extends Thread {
     }
 
     private void showClose() throws IOException {
-        ioController.sendMsg("Program End\n");
+        ioController.sendMsg("Program End");
+        ioController.newLine();
     }
 
     private void executeCommand(Command command) throws IOException {
@@ -70,11 +73,17 @@ public class Bulletin extends Thread {
     }
 
     private void createRecord() throws IOException {
+        ioController.sendMsg("Create Record... To return to the beginning, press " + BACK_STRING);
+        ioController.newLine();
         String title = ioController.nextLine("Please input a title");
-        char ESCAPE_CHAR = 'q';
-        String content = ioController.readMultipleLine("Please input a contents.\n" + "Press '" + ESCAPE_CHAR + "' to complete input.\n", ESCAPE_CHAR);
+        if (title.equals(BACK_STRING)) return;
+        String content = ioController.readMultipleLine("Please input a contents.\n" + "Press '" + ESCAPE_STRING + "' to complete input.\n", ESCAPE_STRING);
+        if (content.equals(BACK_STRING)) return;
         String author = ioController.nextLine("Please input author");
+        if (author.equals(BACK_STRING)) return;
         createRecord(title, content, author);
+        ioController.nextLine("Record created");
+        ioController.newLine();
     }
 
     private synchronized static void createRecord(String title, String content, String author) {
@@ -83,7 +92,10 @@ public class Bulletin extends Thread {
 
     private void deleteRecord() throws IOException {
         Record record = searchRecord();
+        if (record == null) return;
         deleteRecord(record);
+        ioController.sendMsg("Record Deleted.");
+        ioController.newLine();
     }
 
     private synchronized static void deleteRecord(Record record) {
@@ -91,12 +103,18 @@ public class Bulletin extends Thread {
     }
 
     private void showDetail() throws IOException {
-        ioController.sendMsg(searchRecord().getDetailString());
+        Record selectedRecord = searchRecord();
+        if (selectedRecord == null) return;
+        ioController.sendMsg(selectedRecord.getDetailString());
     }
 
     private Record searchRecord() throws IOException {
         while (true) {
-            int no = ioController.nextInt("Select a number");
+            ioController.sendMsg("Select Record... To return to the beginning, press " + BACK_STRING);
+            ioController.newLine();
+            String inputNo = ioController.nextLine("Select a number");
+            if (inputNo.equals(BACK_STRING)) return null;
+            int no = Integer.parseInt(inputNo);
             Record record = recordList.stream().filter(it -> it.getNo() == no).findAny().orElse(null);
             if (record == null) {
                 ioController.sendMsg("Invalid Number");
@@ -116,9 +134,11 @@ public class Bulletin extends Thread {
     }
 
     private void showHelp() throws IOException {
-        ioController.sendMsg("=== Command List ===\n");
+        ioController.sendMsg("=== Command List ===");
+        ioController.newLine();
         for (Command command : Command.values()) {
-            ioController.sendMsg(String.format("%d. %s\n", command.getNum(), command.getName()));
+            ioController.sendMsg(String.format("%d. %s", command.getNum(), command.getName()));
+            ioController.newLine();
         }
     }
 
@@ -135,6 +155,7 @@ public class Bulletin extends Thread {
     }
 
     private void showIntro() throws IOException {
-        ioController.sendMsg("Welcome to Bulletin Program. Press '" + Command.HELP.getNum() + "' to show Help\n");
+        ioController.sendMsg("Welcome to Bulletin Program. Press '" + Command.HELP.getNum() + "' to show Help");
+        ioController.newLine();
     }
 }
