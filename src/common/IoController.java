@@ -53,17 +53,21 @@ public class IoController {
         }
     }
 
-    public String readMultipleLine(String msg, char endChar) throws IOException {
+    public String readMultipleLine(String msg, String escapeString) throws IOException {
         sendMsg(msg + INPUT_MARK);
         StringBuilder sb = new StringBuilder();
         String line;
         while (true) {
             line = receiveMsg();
-            if (line.equals(endChar + "")) {
+            if (line.equals(escapeString + "")) {
                 return sb.toString();
             }
             sb.append(line);
             sb.append('\n');
         }
+    }
+
+    public void newLine(String s) throws IOException {
+        sendMsg("\n");
     }
 }
