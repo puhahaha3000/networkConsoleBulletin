@@ -20,6 +20,15 @@ public class IoController {
         }
     }
 
+    public void close() {
+        try {
+            out.writeUTF("exit");
+            in.close();
+            out.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
     public void sendMsg(String str) throws IOException {
         out.writeUTF(str);
     }

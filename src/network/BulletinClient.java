@@ -9,7 +9,7 @@ import java.util.Scanner;
 public class BulletinClient {
     public static void main(String[] args) {
         try {
-            String serverIp = "192.168.0.88";
+            String serverIp = "127.0.0.1";
 
             // 소켓을 생성하여 연결을 요청한다.
             Socket socket = new Socket(serverIp, 7777);
@@ -29,8 +29,9 @@ public class BulletinClient {
 
 class Sender extends Thread {
     DataOutputStream out;
-
+    Socket socket;
     public Sender(Socket socket) {
+        this.socket = socket;
         try {
             out = new DataOutputStream(socket.getOutputStream());
         } catch (Exception ignored) {
@@ -40,7 +41,7 @@ class Sender extends Thread {
     @Override
     public void run() {
         Scanner scanner = new Scanner(System.in);
-        while(out != null) {
+        while(!socket.isClosed()) {
             try {
                 out.writeUTF(scanner.nextLine());
             } catch (Exception ignored) {
@@ -51,7 +52,9 @@ class Sender extends Thread {
 
 class Receiver extends Thread {
     DataInputStream in;
+    Socket socket;
     Receiver(Socket socket) {
+        this.socket = socket;
         try {
             in = new DataInputStream(socket.getInputStream());
         } catch (IOException ignored) {
@@ -60,9 +63,16 @@ class Receiver extends Thread {
     }
 
     public void run() {
-        while (in != null) {
+        while (!socket.isClosed()) {
             try {
-                System.out.print(in.readUTF());
+                String str = in.readUTF();
+                if (str.equals("exit")){
+                    System.out.println("Press 'Enter' to exit program.");
+                    socket.close();
+                    break;
+                } else {
+                    System.out.print(str);
+                }
             } catch (IOException ignored) {
             }
         }

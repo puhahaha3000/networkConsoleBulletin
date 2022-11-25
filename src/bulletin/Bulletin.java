@@ -12,7 +12,6 @@ public class Bulletin extends Thread {
     private static final LinkedList<Record> recordList = Record.parseFromString(fileController.read());
 
     boolean runFlag = true;
-    private final char ESCAPE_CHAR = 'q';
     private final IoController ioController;
     private final Socket socket;
 
@@ -35,6 +34,7 @@ public class Bulletin extends Thread {
                 }
             }
             showClose();
+            ioController.close();
             socket.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -46,7 +46,7 @@ public class Bulletin extends Thread {
     }
 
     private void showClose() throws IOException {
-        ioController.sendMsg("Program End");
+        ioController.sendMsg("Program End\n");
     }
 
     private void executeCommand(Command command) throws IOException {
@@ -71,6 +71,7 @@ public class Bulletin extends Thread {
 
     private void createRecord() throws IOException {
         String title = ioController.nextLine("Please input a title");
+        char ESCAPE_CHAR = 'q';
         String content = ioController.readMultipleLine("Please input a contents.\n" + "Press '" + ESCAPE_CHAR + "' to complete input.\n", ESCAPE_CHAR);
         String author = ioController.nextLine("Please input author");
         createRecord(title, content, author);
