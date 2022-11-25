@@ -82,7 +82,7 @@ public class Bulletin extends Thread {
         String author = ioController.nextLine("Please input author");
         if (author.equals(BACK_STRING)) return;
         createRecord(title, content, author);
-        ioController.nextLine("Record created");
+        ioController.sendMsg("Record created");
         ioController.newLine();
     }
 
